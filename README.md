@@ -57,3 +57,14 @@
 <h2>Contributing</h2>
 
 <p>Feel free to fork the project, make some updates, and submit pull requests. Any contributions are welcomed!</p>
+
+## Star History
+
+<a href="https://star-history.com/#magnumquest/download_UI2&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date" />
+  </picture>
+</a>
+
