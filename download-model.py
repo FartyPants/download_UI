@@ -50,6 +50,7 @@ class ModelDownloader:
         links = []
         sha256 = []
         classifications = []
+        file_sizes = {}
         has_pytorch = False
         has_pt = False
         # has_ggml = False
@@ -67,6 +68,8 @@ class ModelDownloader:
 
             for i in range(len(dict)):
                 fname = dict[i]['path']
+                fsize = dict[i].get('size', 0)  # Capture the file size
+                file_sizes[fname] = fsize
                 if not is_lora and fname.endswith(('adapter_config.json', 'adapter_model.bin')):
                     is_lora = True
 
@@ -74,9 +77,10 @@ class ModelDownloader:
                 is_safetensors = re.match(".*\.safetensors", fname)
                 is_pt = re.match(".*\.pt", fname)
                 is_ggml = re.match(".*ggml.*\.bin", fname)
+                is_gguf = re.match(".*\.gguf", fname)
                 is_tokenizer = re.match("(tokenizer|ice).*\.model", fname)
                 is_text = re.match(".*\.(txt|json|py|md)", fname) or is_tokenizer
-                if any((is_pytorch, is_safetensors, is_pt, is_ggml, is_tokenizer, is_text)):
+                if any((is_pytorch, is_safetensors, is_pt, is_ggml, is_gguf, is_tokenizer, is_text)):
                     if 'lfs' in dict[i]:
                         sha256.append([fname, dict[i]['lfs']['oid']])
 
@@ -110,7 +114,11 @@ class ModelDownloader:
                 if classifications[i] in ['pytorch', 'pt']:
                     links.pop(i)
 
-        return links, sha256, is_lora
+        #all_links = links
+        #lfs_links = [f"https://huggingface.co/{model}/resolve/{branch}/{sha[0]}" for sha in sha256]
+        #all_links.extend(lfs_links)
+
+        return links, sha256, is_lora, file_sizes
 
     def get_output_folder(self, model, branch, is_lora, base_folder=None):
         if base_folder is None:
@@ -240,7 +248,7 @@ if __name__ == '__main__':
             sys.exit()
 
         # Getting the download links from Hugging Face
-        links, sha256, is_lora = downloader.get_download_links_from_huggingface(model, branch)
+        links, sha256, is_lora, file_sizes = downloader.get_download_links_from_huggingface(model, branch)
 
         # Prompt the user to select files to download
         if not args.check:
