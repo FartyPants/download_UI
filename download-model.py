@@ -1,5 +1,5 @@
 '''
-Downloads models from Hugging Face to models/username_modelname.
+Downloads models from Hugging Face to CurrentworkingDirector/username_modelname.
 
 Example:
 python download-model.py facebook/opt-1.3b
@@ -15,6 +15,7 @@ import os
 import re
 import sys
 from pathlib import Path
+import inquirer
 
 import requests
 import tqdm
@@ -49,6 +50,7 @@ class ModelDownloader:
         links = []
         sha256 = []
         classifications = []
+        file_sizes = {}
         has_pytorch = False
         has_pt = False
         # has_ggml = False
@@ -66,6 +68,8 @@ class ModelDownloader:
 
             for i in range(len(dict)):
                 fname = dict[i]['path']
+                fsize = dict[i].get('size', 0)  # Capture the file size
+                file_sizes[fname] = fsize
                 if not is_lora and fname.endswith(('adapter_config.json', 'adapter_model.bin')):
                     is_lora = True
 
@@ -73,9 +77,10 @@ class ModelDownloader:
                 is_safetensors = re.match(".*\.safetensors", fname)
                 is_pt = re.match(".*\.pt", fname)
                 is_ggml = re.match(".*ggml.*\.bin", fname)
+                is_gguf = re.match(".*\.gguf", fname)
                 is_tokenizer = re.match("(tokenizer|ice).*\.model", fname)
                 is_text = re.match(".*\.(txt|json|py|md)", fname) or is_tokenizer
-                if any((is_pytorch, is_safetensors, is_pt, is_ggml, is_tokenizer, is_text)):
+                if any((is_pytorch, is_safetensors, is_pt, is_ggml, is_gguf, is_tokenizer, is_text)):
                     if 'lfs' in dict[i]:
                         sha256.append([fname, dict[i]['lfs']['oid']])
 
@@ -109,11 +114,15 @@ class ModelDownloader:
                 if classifications[i] in ['pytorch', 'pt']:
                     links.pop(i)
 
-        return links, sha256, is_lora
+        #all_links = links
+        #lfs_links = [f"https://huggingface.co/{model}/resolve/{branch}/{sha[0]}" for sha in sha256]
+        #all_links.extend(lfs_links)
+
+        return links, sha256, is_lora, file_sizes
 
     def get_output_folder(self, model, branch, is_lora, base_folder=None):
         if base_folder is None:
-            base_folder = 'models' if not is_lora else 'loras'
+            base_folder = '.' if not is_lora else 'loras'
 
         output_folder = f"{'_'.join(model.split('/')[-2:])}"
         if branch != 'main':
@@ -123,38 +132,46 @@ class ModelDownloader:
         return output_folder
 
     def get_single_file(self, url, output_folder, start_from_scratch=False):
-        filename = Path(url.rsplit('/', 1)[1])
-        output_path = output_folder / filename
-        headers = {}
-        mode = 'wb'
-        if output_path.exists() and not start_from_scratch:
+        try:
+            filename = Path(url.rsplit('/', 1)[1])
+            output_path = output_folder / filename
+            headers = {}
+            mode = 'wb'
+            if output_path.exists() and not start_from_scratch:
 
-            # Check if the file has already been downloaded completely
-            r = self.s.get(url, stream=True, timeout=20)
-            total_size = int(r.headers.get('content-length', 0))
-            if output_path.stat().st_size >= total_size:
-                return
+                # Check if the file has already been downloaded completely
+                r = self.s.get(url, stream=True, timeout=20)
+                total_size = int(r.headers.get('content-length', 0))
+                if output_path.stat().st_size >= total_size:
+                    return
 
-            # Otherwise, resume the download from where it left off
-            headers = {'Range': f'bytes={output_path.stat().st_size}-'}
-            mode = 'ab'
+                # Otherwise, resume the download from where it left off
+                headers = {'Range': f'bytes={output_path.stat().st_size}-'}
+                mode = 'ab'
 
-        with self.s.get(url, stream=True, headers=headers, timeout=20) as r:
-            r.raise_for_status()  # Do not continue the download if the request was unsuccessful
-            total_size = int(r.headers.get('content-length', 0))
-            block_size = 1024 * 1024  # 1MB
-            with open(output_path, mode) as f:
-                with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, bar_format='{l_bar}{bar}| {n_fmt:6}/{total_fmt:6} {rate_fmt:6}') as t:
-                    count = 0
-                    for data in r.iter_content(block_size):
-                        t.update(len(data))
-                        f.write(data)
-                        if total_size != 0 and self.progress_bar is not None:
-                            count += len(data)
-                            self.progress_bar(float(count) / float(total_size), f"Downloading {filename}")
+            with self.s.get(url, stream=True, headers=headers, timeout=20) as r:
+                r.raise_for_status()  # Do not continue the download if the request was unsuccessful
+                total_size = int(r.headers.get('content-length', 0))
+                block_size = 1024 * 1024  # 1MB
+                with open(output_path, mode) as f:
+                    with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, bar_format=f'{filename}: {{l_bar}}{{bar}}| {{n_fmt:6}}/{{total_fmt:6}} {{rate_fmt:6}}') as t:
+                        count = 0
+                        for data in r.iter_content(block_size):
+                            t.update(len(data))
+                            f.write(data)
+                            if total_size != 0 and self.progress_bar is not None:
+                                count += len(data)
+                                self.progress_bar(float(count) / float(total_size), f"Downloading {filename}")
+        except KeyboardInterrupt:
+            print(f"\nDownload of {filename} interrupted. Exiting...")
+            sys.exit(1)
 
     def start_download_threads(self, file_list, output_folder, start_from_scratch=False, threads=1):
-        thread_map(lambda url: self.get_single_file(url, output_folder, start_from_scratch=start_from_scratch), file_list, max_workers=threads, disable=True)
+        try:
+            thread_map(lambda url: self.get_single_file(url, output_folder, start_from_scratch=start_from_scratch), file_list, max_workers=threads, disable=True)
+        except KeyboardInterrupt:
+            print(f"\nDownload of {filename} interrupted. Exiting...")
+            sys.exit(1)
 
     def download_model_files(self, model, branch, links, sha256, output_folder, progress_bar=None, start_from_scratch=False, threads=1):
         self.progress_bar = progress_bar
@@ -214,30 +231,61 @@ if __name__ == '__main__':
     parser.add_argument('--check', action='store_true', help='Validates the checksums of model files.')
     args = parser.parse_args()
 
+    # Initialization
     branch = args.branch
     model = args.MODEL
 
     if model is None:
         print("Error: Please specify the model you'd like to download (e.g. 'python download-model.py facebook/opt-1.3b').")
         sys.exit()
-
-    downloader = ModelDownloader()
-    # Cleaning up the model/branch names
     try:
-        model, branch = downloader.sanitize_model_and_branch_names(model, branch)
-    except ValueError as err_branch:
-        print(f"Error: {err_branch}")
-        sys.exit()
+        downloader = ModelDownloader()
+        # Cleaning up the model/branch names
+        try:
+            model, branch = downloader.sanitize_model_and_branch_names(model, branch)
+        except ValueError as err_branch:
+            print(f"Error: {err_branch}")
+            sys.exit()
 
-    # Getting the download links from Hugging Face
-    links, sha256, is_lora = downloader.get_download_links_from_huggingface(model, branch, text_only=args.text_only)
+        # Getting the download links from Hugging Face
+        links, sha256, is_lora, file_sizes = downloader.get_download_links_from_huggingface(model, branch)
 
-    # Getting the output folder
-    output_folder = downloader.get_output_folder(model, branch, is_lora, base_folder=args.output)
+        # Prompt the user to select files to download
+        if not args.check:
+            filenames = [link.rsplit('/', 1)[1] for link in links]
+            
+            # Using enumerate to associate each filename with its index
+            choices = [(filename, idx) for idx, filename in enumerate(filenames)]
+            
+            questions = [
+                inquirer.Checkbox('selected_indices',
+                                message="Which files do you want to download?",
+                                choices=choices)
+            ]
+            answers = inquirer.prompt(questions)
 
-    if args.check:
-        # Check previously downloaded files
-        downloader.check_model_files(model, branch, links, sha256, output_folder)
-    else:
-        # Download files
-        downloader.download_model_files(model, branch, links, sha256, output_folder, threads=args.threads)
+            # Retrieve selected indices directly
+            selected_indices = answers['selected_indices']
+            
+            # Get the corresponding links
+            selected_links = [links[i] for i in selected_indices]
+
+            # Get sha256 values for the selected links if they exist
+            selected_sha256 = [sha for idx, sha in enumerate(sha256) if idx in selected_indices]
+        else:
+            selected_links = links
+            selected_sha256 = sha256
+
+        # Getting the output folder
+        output_folder = downloader.get_output_folder(model, branch, is_lora, base_folder=args.output)
+
+        if args.check:
+            # Check previously downloaded files
+            downloader.check_model_files(model, branch, selected_links, selected_sha256, output_folder)
+        else:
+            # Download selected files
+            downloader.download_model_files(model, branch, selected_links, selected_sha256, output_folder, threads=args.threads)
+
+    except KeyboardInterrupt:
+        print("\nMain download session interrupted. Exiting...")
+        sys.exit(1)

@@ -1,9 +1,70 @@
-# download_UI
-A simple Gradio interface for download of hugginface models
+<h1>HuggingFace Model Downloader</h1>
 
-![image](https://github.com/FartyPants/download_UI/assets/23346289/69f5d99d-a90c-49ef-9695-c52dc8c8625b)
+<p>This project provides a simple GUI interface to download models from HuggingFace's Model Hub. It utilizes a <code>ModelDownloader</code> class for fetching and downloading the desired models and files, and a Dash-based GUI interface for smooth user interactions.</p>
 
+![2023-09-23 08_50_27-Dash — Mozilla Firefox](https://github.com/magnumquest/download_UI2/assets/139659490/278f3ea7-ca0e-42e4-ab2d-9922e66ffda7)
 
-put it in your text-generation-webui folder. (You don't need to overwrite download-model.py, it should be the same as oobabooga web UI download-model.py)
-It mimics the action of downloading models in Model tab to Models folder, but without the entire text genration webUI interface
-It also starts on a port 1 higher than WebUI -  the idea is so you can run both - for example when your oobabooga interface is busy training etc...
+<h2>Features</h2>
+
+<ul>
+    <li>Search for available files for a model. (GGUF and GGML Supported)</li>
+    <li>Selectively download desired files.</li>
+    <li>Streamlined user interface for better user experience.</li>
+</ul>
+
+<h2>Setup and Installation</h2>
+
+<h3>Prerequisites</h3>
+
+<ul>
+    <li>Python 3.x</li>
+    <li>Pip (Python package manager)</li>
+</ul>
+
+<h3>Instructions</h3>
+
+<ol>
+    <li><strong>Clone the Repository:</strong>
+        <pre>
+   git clone https://github.com/magnumquest/download_UI2.git
+   cd download_UI2
+        </pre>
+    </li>
+    <li><strong>Install Dependencies:</strong>
+        <p>Ensure you have <code>pip</code> installed. Then, run:</p>
+        <pre>
+   pip install -r requirements.txt
+        </pre>
+        Then proceed with installing the dependencies as instructed above.
+    </li>
+    <li><strong>Run the GUI:</strong>
+        <pre>
+   python download-model-ui.py
+        </pre>
+        This will launch a web interface. Navigate to the provided URL (typically <code>http://127.0.0.1:8000/</code>), and you should see the Model Downloader GUI.
+    </li>
+</ol>
+
+<h2>Usage</h2>
+
+<ol>
+    <li>Input the Hugging Face model name in the given text field.</li>
+    <li>Click on 'Fetch Files' to retrieve the list of available files for the model.</li>
+    <li>Select the files you wish to download from the checklist.</li>
+    <li>Click on 'Download Selected Files' to start downloading the desired files.</li>
+</ol>
+
+<h2>Contributing</h2>
+
+<p>Feel free to fork the project, make some updates, and submit pull requests. Any contributions are welcomed!</p>
+
+## Star History
+
+<a href="https://star-history.com/#magnumquest/download_UI2&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=magnumquest/download_UI2&type=Date" />
+  </picture>
+</a>
+
