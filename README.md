@@ -1,7 +1,8 @@
 # download_UI
 A simple Gradio interface for download of hugginface models
 
-![image](https://github.com/FartyPants/download_UI/assets/23346289/69f5d99d-a90c-49ef-9695-c52dc8c8625b)
+![image](https://github.com/FartyPants/download_UI/assets/23346289/2e74bee4-b55d-4b99-b4d8-b86b5941f46f)
+
 
 
 put it in your text-generation-webui folder. 
