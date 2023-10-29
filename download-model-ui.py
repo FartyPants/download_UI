@@ -7,6 +7,7 @@ import importlib
 import gradio as gr
 import traceback
 from modules import shared
+import webbrowser
 
 model_name = 'None'
 color_er = gr.themes.colors.blue
@@ -80,4 +81,4 @@ with gr.Blocks(title="Downloader", theme=theme) as demo:
     get_file_list.click(partial(download_model_wrapper, return_links=True), [custom_model_menu, download_specific_file], [model_status], show_progress=True)
  
 demo.queue(concurrency_count=1)
-demo.launch(server_port=7861)
+demo.launch(server_port=7861,inbrowser=True)
