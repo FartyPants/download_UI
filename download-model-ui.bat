@@ -1,3 +1,3 @@
-call python download-model-ui.py
+call py download-model-ui.py
 
 pause
